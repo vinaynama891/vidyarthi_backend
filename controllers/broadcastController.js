@@ -15,7 +15,7 @@ const formatPhone = (phone) => {
 };
 
 // Helper function to send single message via UltraMsg
-const sendWhatsAppMessage = async (phone, title, description, imageUrl) => {
+const sendWhatsAppMessage = async (phone, title, description, fileUrl) => {
   const token = process.env.WHATSAPP_API_TOKEN;
   const apiBaseUrl = process.env.WHATSAPP_API_URL;
   
@@ -23,7 +23,13 @@ const sendWhatsAppMessage = async (phone, title, description, imageUrl) => {
     throw new Error('WhatsApp API configuration (WHATSAPP_API_TOKEN or WHATSAPP_API_URL) is missing in .env');
   }
 
-  const endpoint = imageUrl ? '/messages/image' : '/messages/chat';
+  const isPdf = fileUrl && (
+    fileUrl.toLowerCase().endsWith('.pdf') || 
+    fileUrl.toLowerCase().split('?')[0].endsWith('.pdf') ||
+    fileUrl.includes('pdf')
+  );
+
+  const endpoint = fileUrl ? (isPdf ? '/messages/document' : '/messages/image') : '/messages/chat';
   // Standardize trailing slash check
   const baseUrlClean = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
   const url = `${baseUrlClean}${endpoint}`;
@@ -32,9 +38,16 @@ const sendWhatsAppMessage = async (phone, title, description, imageUrl) => {
   params.append('token', token);
   params.append('to', phone);
   
-  if (imageUrl) {
-    params.append('image', imageUrl);
-    params.append('caption', `*${title}*\n\n${description}`);
+  if (fileUrl) {
+    if (isPdf) {
+      params.append('document', fileUrl);
+      const safeTitle = title.replace(/[^a-zA-Z0-9\s]/g, '').trim() || 'document';
+      params.append('filename', `${safeTitle}.pdf`);
+      params.append('caption', `*${title}*\n\n${description}`);
+    } else {
+      params.append('image', fileUrl);
+      params.append('caption', `*${title}*\n\n${description}`);
+    }
   } else {
     params.append('body', `*${title}*\n\n${description}`);
   }
