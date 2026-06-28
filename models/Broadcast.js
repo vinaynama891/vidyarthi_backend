@@ -37,6 +37,10 @@ const broadcastSchema = new mongoose.Schema({
       default: 0
     }
   },
+  isAnnouncement: {
+    type: Boolean,
+    default: false
+  },
   sentAt: {
     type: Date,
     default: Date.now

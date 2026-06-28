@@ -85,7 +85,8 @@ export const getBroadcasts = async (req, res) => {
 // @access  Private (Admin)
 export const sendBroadcast = async (req, res) => {
   try {
-    const { title, description, classes, teachers, enquiries } = req.body;
+    const { title, description, classes, teachers, enquiries, isAnnouncement } = req.body;
+    const isAnnounce = isAnnouncement === 'true' || isAnnouncement === true;
     
     if (!title || !description) {
       return res.status(400).json({ message: 'Title and description are required' });
@@ -120,7 +121,7 @@ export const sendBroadcast = async (req, res) => {
     }
 
     if (parsedClasses.length === 0 && parsedTeachers.length === 0 && parsedEnquiries.length === 0) {
-      return res.status(400).json({ message: 'Please select at least one class, teacher, or enquiry to broadcast to' });
+      return res.status(400).json({ message: 'Please select at least one class, teacher, or enquiry to target' });
     }
 
     // Upload image to ImageKit if provided
@@ -134,52 +135,55 @@ export const sendBroadcast = async (req, res) => {
       }
     }
 
-    // Collect recipient phone numbers
-    const recipientPhones = new Set();
-
-    // Fetch students phone numbers from selected classes
-    if (parsedClasses.length > 0) {
-      const students = await Student.find({ class: { $in: parsedClasses } }).select('phone');
-      students.forEach(std => {
-        if (std.phone) recipientPhones.add(std.phone.trim());
-      });
-    }
-
-    // Fetch teachers phone numbers from selected teacher IDs
-    if (parsedTeachers.length > 0) {
-      const teachersList = await Teacher.find({ _id: { $in: parsedTeachers } }).select('phone');
-      teachersList.forEach(tch => {
-        if (tch.phone) recipientPhones.add(tch.phone.trim());
-      });
-    }
-
-    // Fetch enquiries phone numbers from selected enquiry IDs
-    if (parsedEnquiries.length > 0) {
-      const enquiriesList = await Enquiry.find({ _id: { $in: parsedEnquiries } }).select('mobileNumber');
-      enquiriesList.forEach(enq => {
-        if (enq.mobileNumber) recipientPhones.add(enq.mobileNumber.trim());
-      });
-    }
-
-    const uniquePhoneNumbers = Array.from(recipientPhones);
-    const totalCount = uniquePhoneNumbers.length;
-
-    if (totalCount === 0) {
-      return res.status(400).json({ message: 'No recipients found for the selected targets' });
-    }
-
-    // Send messages in loop
     let successCount = 0;
     let failedCount = 0;
+    let totalCount = 0;
 
-    for (const phone of uniquePhoneNumbers) {
-      try {
-        const formatted = formatPhone(phone);
-        await sendWhatsAppMessage(formatted, title, description, imageUrl);
-        successCount++;
-      } catch (err) {
-        console.error(`Failed to send WhatsApp message to ${phone}:`, err.message);
-        failedCount++;
+    if (!isAnnounce) {
+      // Collect recipient phone numbers
+      const recipientPhones = new Set();
+
+      // Fetch students phone numbers from selected classes
+      if (parsedClasses.length > 0) {
+        const students = await Student.find({ class: { $in: parsedClasses } }).select('phone');
+        students.forEach(std => {
+          if (std.phone) recipientPhones.add(std.phone.trim());
+        });
+      }
+
+      // Fetch teachers phone numbers from selected teacher IDs
+      if (parsedTeachers.length > 0) {
+        const teachersList = await Teacher.find({ _id: { $in: parsedTeachers } }).select('phone');
+        teachersList.forEach(tch => {
+          if (tch.phone) recipientPhones.add(tch.phone.trim());
+        });
+      }
+
+      // Fetch enquiries phone numbers from selected enquiry IDs
+      if (parsedEnquiries.length > 0) {
+        const enquiriesList = await Enquiry.find({ _id: { $in: parsedEnquiries } }).select('mobileNumber');
+        enquiriesList.forEach(enq => {
+          if (enq.mobileNumber) recipientPhones.add(enq.mobileNumber.trim());
+        });
+      }
+
+      const uniquePhoneNumbers = Array.from(recipientPhones);
+      totalCount = uniquePhoneNumbers.length;
+
+      if (totalCount === 0) {
+        return res.status(400).json({ message: 'No recipients found for the selected targets' });
+      }
+
+      // Send messages in loop
+      for (const phone of uniquePhoneNumbers) {
+        try {
+          const formatted = formatPhone(phone);
+          await sendWhatsAppMessage(formatted, title, description, imageUrl);
+          successCount++;
+        } catch (err) {
+          console.error(`Failed to send WhatsApp message to ${phone}:`, err.message);
+          failedCount++;
+        }
       }
     }
 
@@ -188,6 +192,7 @@ export const sendBroadcast = async (req, res) => {
       title,
       description,
       imageUrl,
+      isAnnouncement: isAnnounce,
       targets: {
         classes: parsedClasses,
         teachers: parsedTeachers,
@@ -203,7 +208,9 @@ export const sendBroadcast = async (req, res) => {
     const savedBroadcast = await newBroadcast.save();
 
     res.status(201).json({
-      message: `Broadcast finished. Sent: ${successCount}, Failed: ${failedCount}`,
+      message: isAnnounce 
+        ? 'Announcement posted successfully!' 
+        : `Broadcast finished. Sent: ${successCount}, Failed: ${failedCount}`,
       broadcast: savedBroadcast
     });
 

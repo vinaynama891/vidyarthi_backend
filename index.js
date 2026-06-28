@@ -17,6 +17,8 @@ import testResultRoutes from './routes/testResultRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import broadcastRoutes from './routes/broadcastRoutes.js';
 import enquiryRoutes from './routes/enquiryRoutes.js';
+import studyMaterialRoutes from './routes/studyMaterialRoutes.js';
+import attendanceRoutes from './routes/attendanceRoutes.js';
 
 // Model imports for seeding
 import Admin from './models/Admin.js';
@@ -58,6 +60,8 @@ app.use('/api/results', testResultRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/broadcasts', broadcastRoutes);
 app.use('/api/enquiries', enquiryRoutes);
+app.use('/api/study-materials', studyMaterialRoutes);
+app.use('/api/attendance', attendanceRoutes);
 
 // Test API
 app.get('/', (req, res) => {
@@ -104,6 +108,8 @@ const seedDatabase = async () => {
       await FeeStructure.insertMany(defaultFees);
       console.log('Database Seeded: Fee structures created for all classes.');
     }
+
+    // Seeding of Default and Mock Teachers has been removed permanently.
 
     // 3. Seed some mock Achievements if empty (using placeholder illustrations or simple colors)
     const achCount = await Achievement.countDocuments({});
@@ -169,23 +175,6 @@ const seedDatabase = async () => {
       });
       await mockStudent2.save();
     }
-
-    const teacherCount = await Teacher.countDocuments({});
-    if (teacherCount === 0) {
-      const mockTeacher = new Teacher({
-        teacherId: 'TK101',
-        name: 'Dr. Ramesh Prasad',
-        fatherName: 'Shambhu Prasad',
-        subject: 'Rajasthan GK & History',
-        classesAssigned: ['Rajasthan GK', 'Class 11', 'Class 12'],
-        phone: '9988776655',
-        email: 'ramesh@vidyarthi.com',
-        salary: 45000,
-        joiningDate: new Date('2023-08-15')
-      });
-      await mockTeacher.save();
-    }
-
   } catch (error) {
     console.error('Seeding database failed:', error);
   }

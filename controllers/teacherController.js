@@ -1,4 +1,5 @@
 import Teacher from '../models/Teacher.js';
+import Attendance from '../models/Attendance.js';
 
 // Helper to generate a unique 5-letter teacher ID
 const generateUniqueTeacherId = async () => {
@@ -19,7 +20,7 @@ const generateUniqueTeacherId = async () => {
 // @access  Private
 export const getTeachers = async (req, res) => {
   try {
-    const { search } = req.query;
+    const { search, month, year } = req.query;
     let query = {};
 
     if (search) {
@@ -30,8 +31,49 @@ export const getTeachers = async (req, res) => {
       ];
     }
 
-    const teachers = await Teacher.find(query).sort({ joiningDate: -1 });
-    res.json(teachers);
+    const teachers = await Teacher.find(query).sort({ name: 1 });
+
+    // Parse year and month, sanitize inputs
+    const selectedYear = String(year || new Date().getFullYear()).replace(/[^0-9]/g, '');
+    const selectedMonth = String(month || (new Date().getMonth() + 1)).replace(/[^0-9]/g, '');
+    const monthPrefix = `${selectedYear}-${selectedMonth.padStart(2, '0')}`;
+
+    // Get all attendance logs for teachers for this month
+    const attendanceLogs = await Attendance.find({
+      userType: 'teacher',
+      date: { $regex: new RegExp(`^${monthPrefix}`) }
+    });
+
+    // Map teachers to include calculated fields
+    const teachersWithSalary = teachers.map((teacher) => {
+      const teacherObj = teacher.toObject();
+      const teacherLogs = attendanceLogs.filter(
+        (log) => log.teacherId && log.teacherId.toString() === teacher._id.toString()
+      );
+
+      // Convert teacher joining date to local YYYY-MM-DD string safely
+      const jDate = new Date(teacher.joiningDate);
+      const joinDateStr = `${jDate.getFullYear()}-${String(jDate.getMonth() + 1).padStart(2, '0')}-${String(jDate.getDate()).padStart(2, '0')}`;
+
+      // Only count logs that are on or after the teacher's joining date
+      const presentCount = teacherLogs.filter((log) => log.status === 'present' && log.date >= joinDateStr).length;
+      const holidayCount = teacherLogs.filter((log) => log.status === 'holiday' && log.date >= joinDateStr).length;
+      const absentCount = teacherLogs.filter((log) => log.status === 'absent' || log.date < joinDateStr).length;
+
+      const perDaySalary = Math.round((teacher.salary || 0) / 30);
+      const salaryEarned = (presentCount + holidayCount) * perDaySalary;
+
+      return {
+        ...teacherObj,
+        presentCount,
+        holidayCount,
+        absentCount,
+        perDaySalary,
+        salaryEarned
+      };
+    });
+
+    res.json(teachersWithSalary);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -69,7 +111,7 @@ export const registerTeacher = async (req, res) => {
       email,
       salary,
       joiningDate: joiningDate || new Date(),
-      password: "Vidyarthi@20"
+      password: "Vidyarthi@10"
     });
 
     const createdTeacher = await teacher.save();

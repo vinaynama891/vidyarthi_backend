@@ -42,7 +42,7 @@ const teacherSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    default: "Vidyarthi@20"
+    default: "Vidyarthi@10"
   }
 });
 

@@ -34,7 +34,7 @@ export const getStudents = async (req, res) => {
       ];
     }
 
-    const students = await Student.find(query).sort({ createdAt: -1 });
+    const students = await Student.find(query).sort({ name: 1 });
     res.json(students);
   } catch (error) {
     res.status(500).json({ message: error.message });
