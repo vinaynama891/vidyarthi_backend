@@ -77,6 +77,17 @@ const studentSchema = new mongoose.Schema({
       }
     }
   ],
+  studentType: {
+    type: String,
+    enum: ['Regular', 'NotesOnly'],
+    default: 'Regular'
+  },
+  unlockedNotes: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'StudyMaterial'
+    }
+  ],
   createdAt: {
     type: Date,
     default: Date.now

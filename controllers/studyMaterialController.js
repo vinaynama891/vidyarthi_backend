@@ -76,3 +76,79 @@ export const deleteStudyMaterial = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Get public study materials (secure, fileUrl hidden for locked items)
+// @route   GET /api/study-materials/public
+// @access  Public
+export const getPublicStudyMaterials = async (req, res) => {
+  try {
+    const materials = await StudyMaterial.find({}).sort({ uploadedAt: 1 }); // Oldest first
+    
+    const classFirstItemSeen = {};
+    
+    const safeMaterials = materials.map(mat => {
+      const matClass = mat.targetClass;
+      const matObj = mat.toObject();
+      
+      if (!classFirstItemSeen[matClass]) {
+        classFirstItemSeen[matClass] = true;
+        matObj.isFree = true;
+      } else {
+        matObj.isFree = false;
+        matObj.fileUrl = ''; // Hide download URL for locked items
+      }
+      return matObj;
+    });
+    
+    res.json(safeMaterials);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get study materials for logged-in student (secure, fileUrl hidden unless free or unlocked)
+// @route   GET /api/study-materials/student
+// @access  Private (Student)
+export const getStudentStudyMaterials = async (req, res) => {
+  try {
+    if (req.userRole !== 'student') {
+      return res.status(403).json({ message: 'Forbidden: Student access only' });
+    }
+    
+    const student = req.user;
+    const studentClass = student.class;
+    
+    // Get all materials matching this class or 'All'
+    const materials = await StudyMaterial.find({
+      targetClass: { $in: [studentClass, 'All'] }
+    }).sort({ uploadedAt: 1 });
+    
+    const classFirstItemSeen = {};
+    const unlockedNotesSet = new Set((student.unlockedNotes || []).map(id => id.toString()));
+    
+    const secureMaterials = materials.map(mat => {
+      const matClass = mat.targetClass;
+      const matObj = mat.toObject();
+      const isFirst = !classFirstItemSeen[matClass];
+      
+      if (isFirst) {
+        classFirstItemSeen[matClass] = true;
+      }
+      
+      const isExplicitlyUnlocked = unlockedNotesSet.has(mat._id.toString());
+      
+      if (isFirst || isExplicitlyUnlocked) {
+        matObj.isUnlocked = true;
+      } else {
+        matObj.isUnlocked = false;
+        matObj.fileUrl = ''; // Hide download URL for locked items
+      }
+      return matObj;
+    });
+    
+    res.json(secureMaterials);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+

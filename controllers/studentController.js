@@ -56,7 +56,9 @@ export const registerStudent = async (req, res) => {
     paidFees,
     goodiesTotalFee,
     goodiesPaidFee,
-    address
+    address,
+    studentType,
+    unlockedNotes
   } = req.body;
 
   try {
@@ -67,14 +69,16 @@ export const registerStudent = async (req, res) => {
       fatherName,
       class: studentClass,
       phone,
-      password: "Vidyarthi@20",
+      password: req.body.password || "Vidyarthi@20",
       goodiesStatus: goodiesStatus || 'Pending',
       discount: discount || 0,
-      totalFees,
+      totalFees: totalFees || 0,
       paidFees: paidFees || 0,
       goodiesTotalFee: goodiesTotalFee || 0,
       goodiesPaidFee: goodiesPaidFee || 0,
       address,
+      studentType: studentType || 'Regular',
+      unlockedNotes: unlockedNotes || [],
       installments: req.body.installments || []
     });
 
@@ -104,6 +108,10 @@ export const updateStudent = async (req, res) => {
       student.goodiesTotalFee = req.body.goodiesTotalFee !== undefined ? req.body.goodiesTotalFee : student.goodiesTotalFee;
       student.goodiesPaidFee = req.body.goodiesPaidFee !== undefined ? req.body.goodiesPaidFee : student.goodiesPaidFee;
       student.address = req.body.address || student.address;
+      student.studentType = req.body.studentType || student.studentType;
+      if (req.body.unlockedNotes !== undefined) {
+        student.unlockedNotes = req.body.unlockedNotes;
+      }
       if (req.body.installments !== undefined) {
         student.installments = req.body.installments;
       }

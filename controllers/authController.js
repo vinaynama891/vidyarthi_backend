@@ -64,11 +64,39 @@ export const loginUser = async (req, res) => {
         name: student.name,
         studentId: student.studentId,
         role: 'student',
+        studentType: student.studentType || 'Regular',
         token: generateToken(student._id, 'student')
       });
     }
 
     res.status(401).json({ message: 'Invalid credentials. Check Email/ID and Password.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Change password
+// @route   POST /api/auth/change-password
+// @access  Private
+export const changePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ message: 'Current password and new password are required' });
+  }
+
+  try {
+    const user = req.user;
+
+    const isMatch = await user.matchPassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Incorrect current password' });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({ success: true, message: 'Password updated successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

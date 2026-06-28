@@ -19,6 +19,9 @@ import broadcastRoutes from './routes/broadcastRoutes.js';
 import enquiryRoutes from './routes/enquiryRoutes.js';
 import studyMaterialRoutes from './routes/studyMaterialRoutes.js';
 import attendanceRoutes from './routes/attendanceRoutes.js';
+import demoClassRoutes from './routes/demoClassRoutes.js';
+import offerRoutes from './routes/offerRoutes.js';
+import coursePageRoutes from './routes/coursePageRoutes.js';
 
 // Model imports for seeding
 import Admin from './models/Admin.js';
@@ -62,6 +65,9 @@ app.use('/api/broadcasts', broadcastRoutes);
 app.use('/api/enquiries', enquiryRoutes);
 app.use('/api/study-materials', studyMaterialRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/demo-classes', demoClassRoutes);
+app.use('/api/offers', offerRoutes);
+app.use('/api/courses', coursePageRoutes);
 
 // Test API
 app.get('/', (req, res) => {
