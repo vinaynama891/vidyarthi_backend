@@ -20,6 +20,11 @@ const studentSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  medium: {
+    type: String,
+    enum: ['English', 'Hindi'],
+    default: 'English'
+  },
   phone: {
     type: String,
     required: true

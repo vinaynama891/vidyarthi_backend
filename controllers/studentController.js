@@ -49,6 +49,7 @@ export const registerStudent = async (req, res) => {
     name,
     fatherName,
     class: studentClass,
+    medium,
     phone,
     goodiesStatus,
     discount,
@@ -68,6 +69,7 @@ export const registerStudent = async (req, res) => {
       name,
       fatherName,
       class: studentClass,
+      medium: medium || 'English',
       phone,
       password: req.body.password || "Vidyarthi@20",
       goodiesStatus: goodiesStatus || 'Pending',
@@ -100,6 +102,7 @@ export const updateStudent = async (req, res) => {
       student.name = req.body.name || student.name;
       student.fatherName = req.body.fatherName || student.fatherName;
       student.class = req.body.class || student.class;
+      student.medium = req.body.medium || student.medium;
       student.phone = req.body.phone || student.phone;
       student.goodiesStatus = req.body.goodiesStatus || student.goodiesStatus;
       student.discount = req.body.discount !== undefined ? req.body.discount : student.discount;

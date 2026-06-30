@@ -6,9 +6,18 @@ const feeStructureSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  // Legacy field kept for backward compatibility
   fee: {
     type: Number,
-    required: true
+    default: 0
+  },
+  englishMediumFee: {
+    type: Number,
+    default: 0
+  },
+  hindiMediumFee: {
+    type: Number,
+    default: 0
   }
 });
 

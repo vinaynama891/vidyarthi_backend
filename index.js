@@ -22,6 +22,7 @@ import attendanceRoutes from './routes/attendanceRoutes.js';
 import demoClassRoutes from './routes/demoClassRoutes.js';
 import offerRoutes from './routes/offerRoutes.js';
 import coursePageRoutes from './routes/coursePageRoutes.js';
+import onlineTestRoutes from './routes/onlineTestRoutes.js';
 
 // Model imports for seeding
 import Admin from './models/Admin.js';
@@ -68,6 +69,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/demo-classes', demoClassRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/courses', coursePageRoutes);
+app.use('/api/online-tests', onlineTestRoutes);
 
 // Test API
 app.get('/', (req, res) => {

@@ -27,10 +27,16 @@ export const getFeeStructures = async (req, res) => {
           }
         });
 
+        // Resolve effective fees: prefer new fields, fall back to legacy `fee`
+        const engFee = structure.englishMediumFee || structure.fee || 0;
+        const hindiFee = structure.hindiMediumFee || 0;
+
         return {
           _id: structure._id,
           class: structure.class,
-          fee: structure.fee,
+          fee: engFee,                    // legacy compat
+          englishMediumFee: engFee,
+          hindiMediumFee: hindiFee,
           students: studentCount,
           paid: fullyPaidCount,
           pending: pendingCount
@@ -52,7 +58,15 @@ export const getFeeStructureByClass = async (req, res) => {
     const className = req.params.class;
     const structure = await FeeStructure.findOne({ class: className });
     if (structure) {
-      res.json(structure);
+      const engFee = structure.englishMediumFee || structure.fee || 0;
+      const hindiFee = structure.hindiMediumFee || 0;
+      res.json({
+        _id: structure._id,
+        class: structure.class,
+        fee: engFee,
+        englishMediumFee: engFee,
+        hindiMediumFee: hindiFee
+      });
     } else {
       res.status(404).json({ message: `Fee structure not set for ${className}` });
     }
@@ -65,21 +79,33 @@ export const getFeeStructureByClass = async (req, res) => {
 // @route   PUT /api/fees/structure/:class
 // @access  Private
 export const updateFeeStructure = async (req, res) => {
-  const { fee } = req.body;
+  const { fee, englishMediumFee, hindiMediumFee } = req.body;
   const className = req.params.class;
+
+  // Determine english fee: prefer explicit englishMediumFee, else legacy fee field
+  const engFee = englishMediumFee !== undefined ? parseFloat(englishMediumFee) : (fee !== undefined ? parseFloat(fee) : undefined);
+  const hindiFee = hindiMediumFee !== undefined ? parseFloat(hindiMediumFee) : undefined;
 
   try {
     let structure = await FeeStructure.findOne({ class: className });
 
     if (structure) {
-      structure.fee = fee;
+      if (engFee !== undefined) {
+        structure.englishMediumFee = engFee;
+        structure.fee = engFee; // keep legacy in sync
+      }
+      if (hindiFee !== undefined) {
+        structure.hindiMediumFee = hindiFee;
+      }
       const updatedStructure = await structure.save();
       res.json(updatedStructure);
     } else {
       // Create new structure if it doesn't exist
       structure = new FeeStructure({
         class: className,
-        fee
+        fee: engFee || 0,
+        englishMediumFee: engFee || 0,
+        hindiMediumFee: hindiFee || 0
       });
       const createdStructure = await structure.save();
       res.status(201).json(createdStructure);
@@ -114,12 +140,12 @@ export const getStudentFeeRecords = async (req, res) => {
         studentId: student.studentId,
         name: student.name,
         class: student.class,
+        medium: student.medium || 'English',
         totalFee: student.totalFees,
         discount: student.discount,
         netFee: total,
         paid: student.paidFees,
         pending: pending > 0 ? pending : 0,
-        // Since we don't track payment transactions in detail, we use createdAt or current date if paid
         lastPaymentDate: student.paidFees > 0 ? student.createdAt : null
       };
     });

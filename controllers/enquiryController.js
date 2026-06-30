@@ -65,3 +65,27 @@ export const deleteEnquiry = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Update admin note on an enquiry
+// @route   PATCH /api/enquiries/:id/note
+// @access  Private/Admin
+export const updateEnquiryNote = async (req, res) => {
+  const { id } = req.params;
+  const { adminNote } = req.body;
+
+  try {
+    const enquiry = await Enquiry.findByIdAndUpdate(
+      id,
+      { adminNote: adminNote ?? '' },
+      { new: true }
+    );
+
+    if (!enquiry) {
+      return res.status(404).json({ message: 'Enquiry not found' });
+    }
+
+    res.status(200).json({ success: true, enquiry });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

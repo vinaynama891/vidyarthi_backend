@@ -16,6 +16,15 @@ const studyMaterialSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  notesType: {
+    type: String,
+    enum: ['Free', 'Paid'],
+    default: 'Free'
+  },
+  price: {
+    type: Number,
+    default: 0
+  },
   uploadedAt: {
     type: Date,
     default: Date.now
