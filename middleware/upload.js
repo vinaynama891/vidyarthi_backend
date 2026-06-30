@@ -36,7 +36,7 @@ const upload = multer({
   fileFilter: function (req, file, cb) {
     checkFileType(file, cb);
   },
-  limits: { fileSize: 5000000 } // 5MB max
+  limits: { fileSize: 100 * 1024 * 1024 } // 100MB max
 });
 
 export default upload;

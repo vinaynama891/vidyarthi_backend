@@ -7,6 +7,28 @@ import { uploadToImageKit } from '../config/imagekit.js';
 export const getStudyMaterials = async (req, res) => {
   try {
     const studyMaterials = await StudyMaterial.find({}).sort({ uploadedAt: -1 });
+    
+    if (req.userRole === 'student') {
+      const student = req.user;
+      const unlockedNotesSet = new Set((student.unlockedNotes || []).map(id => id.toString()));
+      const isCoachingStudent = student.studentType === 'Regular';
+
+      const secureMaterials = studyMaterials.map(mat => {
+        const matObj = mat.toObject();
+        const isFree = mat.notesType === 'Free';
+        const isExplicitlyUnlocked = unlockedNotesSet.has(mat._id.toString());
+
+        if (isFree || isCoachingStudent || isExplicitlyUnlocked) {
+          matObj.isUnlocked = true;
+        } else {
+          matObj.isUnlocked = false;
+          matObj.fileUrl = ''; // Hide download URL for locked items
+        }
+        return matObj;
+      });
+      return res.json(secureMaterials);
+    }
+    
     res.json(studyMaterials);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -22,7 +44,7 @@ export const createStudyMaterial = async (req, res) => {
       return res.status(403).json({ message: 'Forbidden: Admin access only' });
     }
 
-    const { title, description, targetClass } = req.body;
+    const { title, description, targetClass, notesType, price } = req.body;
 
     if (!title || !targetClass) {
       return res.status(400).json({ message: 'Title and target class are required' });
@@ -45,7 +67,9 @@ export const createStudyMaterial = async (req, res) => {
       title,
       description,
       fileUrl,
-      targetClass
+      targetClass,
+      notesType: notesType || 'Free',
+      price: notesType === 'Paid' ? (Number(price) || 0) : 0
     });
 
     await studyMaterial.save();
@@ -84,14 +108,10 @@ export const getPublicStudyMaterials = async (req, res) => {
   try {
     const materials = await StudyMaterial.find({}).sort({ uploadedAt: 1 }); // Oldest first
     
-    const classFirstItemSeen = {};
-    
     const safeMaterials = materials.map(mat => {
-      const matClass = mat.targetClass;
       const matObj = mat.toObject();
       
-      if (!classFirstItemSeen[matClass]) {
-        classFirstItemSeen[matClass] = true;
+      if (mat.notesType === 'Free') {
         matObj.isFree = true;
       } else {
         matObj.isFree = false;
@@ -123,25 +143,20 @@ export const getStudentStudyMaterials = async (req, res) => {
       targetClass: { $in: [studentClass, 'All'] }
     }).sort({ uploadedAt: 1 });
     
-    const classFirstItemSeen = {};
     const unlockedNotesSet = new Set((student.unlockedNotes || []).map(id => id.toString()));
     
     const secureMaterials = materials.map(mat => {
-      const matClass = mat.targetClass;
       const matObj = mat.toObject();
-      const isFirst = !classFirstItemSeen[matClass];
       
-      if (isFirst) {
-        classFirstItemSeen[matClass] = true;
-      }
-      
+      const isFree = mat.notesType === 'Free';
+      const isCoachingStudent = student.studentType === 'Regular';
       const isExplicitlyUnlocked = unlockedNotesSet.has(mat._id.toString());
       
-      if (isFirst || isExplicitlyUnlocked) {
+      if (isFree || isCoachingStudent || isExplicitlyUnlocked) {
         matObj.isUnlocked = true;
       } else {
         matObj.isUnlocked = false;
-        matObj.fileUrl = ''; // Hide download URL for locked items
+        matObj.fileUrl = ''; // Hide download URL for locked/paid items
       }
       return matObj;
     });
