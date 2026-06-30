@@ -107,8 +107,6 @@ const seedDatabase = async () => {
         { class: 'Class 8', fee: 8000 },
         { class: 'Class 9', fee: 9000 },
         { class: 'Class 10', fee: 10000 },
-        { class: 'Class 11', fee: 12000 },
-        { class: 'Class 12', fee: 12000 },
         { class: 'BSTC', fee: 8000 },
         { class: 'Rajasthan GK', fee: 4000 },
         { class: 'Hindi Literature', fee: 6000 }

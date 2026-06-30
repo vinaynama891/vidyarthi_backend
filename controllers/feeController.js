@@ -6,7 +6,32 @@ import Student from '../models/Student.js';
 // @access  Public (or Private)
 export const getFeeStructures = async (req, res) => {
   try {
-    const feeStructures = await FeeStructure.find({});
+    const requiredClasses = [
+      'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
+      'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
+      'Class 11 Arts', 'Class 11 Science Bio', 'Class 11 Science Maths',
+      'Class 12 Arts', 'Class 12 Science Bio', 'Class 12 Science Maths',
+      'BSTC', 'Rajasthan GK', 'Hindi Literature',
+      '5TH JNV', '9TH JNV', 'LDC', 'CET', 'VDO'
+    ];
+
+    // Ensure all required classes exist in FeeStructure collection
+    for (const className of requiredClasses) {
+      const exists = await FeeStructure.findOne({ class: className });
+      if (!exists) {
+        await FeeStructure.create({
+          class: className,
+          fee: 0,
+          englishMediumFee: 0,
+          hindiMediumFee: 0
+        });
+      }
+    }
+
+    // Clean up legacy/unwanted normal Class 11 and Class 12 records if they exist in the DB
+    await FeeStructure.deleteMany({ class: { $in: ['Class 11', 'Class 12'] } });
+
+    const feeStructures = await FeeStructure.find({ class: { $in: requiredClasses } });
 
     // For each class fee structure, aggregate student counts
     const enrichedStructures = await Promise.all(
@@ -56,20 +81,27 @@ export const getFeeStructures = async (req, res) => {
 export const getFeeStructureByClass = async (req, res) => {
   try {
     const className = req.params.class;
-    const structure = await FeeStructure.findOne({ class: className });
-    if (structure) {
-      const engFee = structure.englishMediumFee || structure.fee || 0;
-      const hindiFee = structure.hindiMediumFee || 0;
-      res.json({
-        _id: structure._id,
-        class: structure.class,
-        fee: engFee,
-        englishMediumFee: engFee,
-        hindiMediumFee: hindiFee
+    let structure = await FeeStructure.findOne({ class: className });
+    
+    // Auto-create structure if not found
+    if (!structure) {
+      structure = await FeeStructure.create({
+        class: className,
+        fee: 0,
+        englishMediumFee: 0,
+        hindiMediumFee: 0
       });
-    } else {
-      res.status(404).json({ message: `Fee structure not set for ${className}` });
     }
+
+    const engFee = structure.englishMediumFee || structure.fee || 0;
+    const hindiFee = structure.hindiMediumFee || 0;
+    res.json({
+      _id: structure._id,
+      class: structure.class,
+      fee: engFee,
+      englishMediumFee: engFee,
+      hindiMediumFee: hindiFee
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
