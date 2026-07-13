@@ -1,7 +1,8 @@
 import Student from '../models/Student.js';
 import Teacher from '../models/Teacher.js';
+import Expense from '../models/Expense.js';
 
-// @desc    Get dashboard stats (Total Students, Teachers, and Fee Aggregates)
+// @desc    Get dashboard stats (Total Students, Teachers, Fee Aggregates, Expenses, and Total Profit)
 // @route   GET /api/dashboard/stats
 // @access  Private
 export const getDashboardStats = async (req, res) => {
@@ -26,12 +27,24 @@ export const getDashboardStats = async (req, res) => {
       }
     });
 
+    // Fetch and sum all expenses
+    const expenses = await Expense.find({});
+    let totalExpenses = 0;
+    expenses.forEach((expense) => {
+      totalExpenses += expense.amount;
+    });
+
+    // Calculate total profit (total fee billing - expenses)
+    const totalProfit = totalFees - totalExpenses;
+
     res.json({
       totalStudents,
       totalTeachers,
       totalFees,
       paidFees,
-      pendingFees
+      pendingFees,
+      totalExpenses,
+      totalProfit
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

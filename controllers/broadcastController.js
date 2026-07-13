@@ -5,69 +5,6 @@ import Enquiry from '../models/Enquiry.js';
 import { uploadToImageKit } from '../config/imagekit.js';
 import fs from 'fs';
 
-// Helper to format phone numbers to international standard (91XXXXXXXXXX)
-const formatPhone = (phone) => {
-  let cleaned = phone.replace(/\D/g, ''); // keep only digits
-  if (cleaned.length === 10) {
-    return `91${cleaned}`;
-  }
-  return cleaned;
-};
-
-// Helper function to send single message via UltraMsg
-const sendWhatsAppMessage = async (phone, title, description, fileUrl) => {
-  const token = process.env.WHATSAPP_API_TOKEN;
-  const apiBaseUrl = process.env.WHATSAPP_API_URL;
-  
-  if (!token || !apiBaseUrl) {
-    throw new Error('WhatsApp API configuration (WHATSAPP_API_TOKEN or WHATSAPP_API_URL) is missing in .env');
-  }
-
-  const isPdf = fileUrl && (
-    fileUrl.toLowerCase().endsWith('.pdf') || 
-    fileUrl.toLowerCase().split('?')[0].endsWith('.pdf') ||
-    fileUrl.includes('pdf')
-  );
-
-  const endpoint = fileUrl ? (isPdf ? '/messages/document' : '/messages/image') : '/messages/chat';
-  // Standardize trailing slash check
-  const baseUrlClean = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
-  const url = `${baseUrlClean}${endpoint}`;
-  
-  const params = new URLSearchParams();
-  params.append('token', token);
-  params.append('to', phone);
-  
-  if (fileUrl) {
-    if (isPdf) {
-      params.append('document', fileUrl);
-      const safeTitle = title.replace(/[^a-zA-Z0-9\s]/g, '').trim() || 'document';
-      params.append('filename', `${safeTitle}.pdf`);
-      params.append('caption', `*${title}*\n\n${description}`);
-    } else {
-      params.append('image', fileUrl);
-      params.append('caption', `*${title}*\n\n${description}`);
-    }
-  } else {
-    params.append('body', `*${title}*\n\n${description}`);
-  }
-  
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: params.toString()
-  });
-  
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`UltraMsg Response Error: ${response.status} - ${text}`);
-  }
-  
-  return await response.json();
-};
-
 // @desc    Get all broadcasts history
 // @route   GET /api/broadcasts
 // @access  Private (Admin)
@@ -80,7 +17,7 @@ export const getBroadcasts = async (req, res) => {
   }
 };
 
-// @desc    Send broadcast message via WhatsApp
+// @desc    Send broadcast message via In-App Notification Board
 // @route   POST /api/broadcasts
 // @access  Private (Admin)
 export const sendBroadcast = async (req, res) => {
@@ -139,53 +76,18 @@ export const sendBroadcast = async (req, res) => {
     let failedCount = 0;
     let totalCount = 0;
 
-    if (!isAnnounce) {
-      // Collect recipient phone numbers
-      const recipientPhones = new Set();
-
-      // Fetch students phone numbers from selected classes
-      if (parsedClasses.length > 0) {
-        const students = await Student.find({ class: { $in: parsedClasses } }).select('phone');
-        students.forEach(std => {
-          if (std.phone) recipientPhones.add(std.phone.trim());
-        });
-      }
-
-      // Fetch teachers phone numbers from selected teacher IDs
-      if (parsedTeachers.length > 0) {
-        const teachersList = await Teacher.find({ _id: { $in: parsedTeachers } }).select('phone');
-        teachersList.forEach(tch => {
-          if (tch.phone) recipientPhones.add(tch.phone.trim());
-        });
-      }
-
-      // Fetch enquiries phone numbers from selected enquiry IDs
-      if (parsedEnquiries.length > 0) {
-        const enquiriesList = await Enquiry.find({ _id: { $in: parsedEnquiries } }).select('mobileNumber');
-        enquiriesList.forEach(enq => {
-          if (enq.mobileNumber) recipientPhones.add(enq.mobileNumber.trim());
-        });
-      }
-
-      const uniquePhoneNumbers = Array.from(recipientPhones);
-      totalCount = uniquePhoneNumbers.length;
-
-      if (totalCount === 0) {
-        return res.status(400).json({ message: 'No recipients found for the selected targets' });
-      }
-
-      // Send messages in loop
-      for (const phone of uniquePhoneNumbers) {
-        try {
-          const formatted = formatPhone(phone);
-          await sendWhatsAppMessage(formatted, title, description, imageUrl);
-          successCount++;
-        } catch (err) {
-          console.error(`Failed to send WhatsApp message to ${phone}:`, err.message);
-          failedCount++;
-        }
-      }
+    // Calculate total targeted audience count for stats
+    if (parsedClasses.length > 0) {
+      totalCount += await Student.countDocuments({ class: { $in: parsedClasses } });
     }
+    if (parsedTeachers.length > 0) {
+      totalCount += await Teacher.countDocuments({ _id: { $in: parsedTeachers } });
+    }
+    if (parsedEnquiries.length > 0) {
+      totalCount += await Enquiry.countDocuments({ _id: { $in: parsedEnquiries } });
+    }
+
+    successCount = totalCount;
 
     // Save broadcast record
     const newBroadcast = new Broadcast({
@@ -210,7 +112,7 @@ export const sendBroadcast = async (req, res) => {
     res.status(201).json({
       message: isAnnounce 
         ? 'Announcement posted successfully!' 
-        : `Broadcast finished. Sent: ${successCount}, Failed: ${failedCount}`,
+        : `Broadcast posted successfully in-app to ${successCount} recipients!`,
       broadcast: savedBroadcast
     });
 
@@ -227,3 +129,4 @@ export const sendBroadcast = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
