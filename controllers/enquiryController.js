@@ -4,9 +4,9 @@ import Enquiry from '../models/Enquiry.js';
 // @route   POST /api/enquiries
 // @access  Public
 export const submitEnquiry = async (req, res) => {
-  const { studentName, fatherName, mobileNumber, title, description } = req.body;
+  const { studentName, fatherName, mobileNumber, title, description, email } = req.body;
 
-  if (!studentName || !fatherName || !mobileNumber || !title || !description) {
+  if (!studentName || !fatherName || !mobileNumber || !title || !description || !email) {
     return res.status(400).json({ message: 'All fields are required' });
   }
 
@@ -16,7 +16,8 @@ export const submitEnquiry = async (req, res) => {
       fatherName,
       mobileNumber,
       title,
-      description
+      description,
+      email
     });
 
     await newEnquiry.save();

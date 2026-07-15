@@ -27,6 +27,11 @@ const enquirySchema = new mongoose.Schema(
       required: [true, 'Enquiry details are required'],
       trim: true
     },
+    email: {
+      type: String,
+      required: [true, 'Email is required'],
+      trim: true
+    },
     adminNote: {
       type: String,
       trim: true,
