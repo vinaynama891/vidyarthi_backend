@@ -1,4 +1,5 @@
 import Enquiry from '../models/Enquiry.js';
+import { sendWhatsAppMessage } from '../config/whatsapp.js';
 
 // @desc    Submit a new enquiry
 // @route   POST /api/enquiries
@@ -6,8 +7,8 @@ import Enquiry from '../models/Enquiry.js';
 export const submitEnquiry = async (req, res) => {
   const { studentName, fatherName, mobileNumber, title, description, email } = req.body;
 
-  if (!studentName || !fatherName || !mobileNumber || !title || !description || !email) {
-    return res.status(400).json({ message: 'All fields are required' });
+  if (!studentName || !fatherName || !mobileNumber || !title || !description) {
+    return res.status(400).json({ message: 'studentName, fatherName, mobileNumber, title, and description are required' });
   }
 
   try {
@@ -17,10 +18,27 @@ export const submitEnquiry = async (req, res) => {
       mobileNumber,
       title,
       description,
-      email
+      email // optional now
     });
 
     await newEnquiry.save();
+
+    // Send WhatsApp notification to Admin
+    const adminPhone = process.env.ADMIN_WHATSAPP_NUMBER || '919703040756';
+    const whatsappText = `*📚 New Admission Enquiry Received!*
+
+👤 *Student Name:* ${studentName}
+👨 *Father's Name:* ${fatherName}
+📞 *Mobile Number:* ${mobileNumber}
+📝 *Subject:* ${title}
+💬 *Query Details:* 
+${description}
+
+---
+_Submitted via Vidyarthi Classes website_`;
+
+    sendWhatsAppMessage({ to: adminPhone, body: whatsappText })
+      .catch(err => console.error('Failed to trigger WhatsApp message async:', err));
 
     res.status(201).json({
       success: true,
