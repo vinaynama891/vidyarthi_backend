@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import bcrypt from 'bcryptjs';
 import path from 'path';
 import fs from 'fs';
 import connectDB from './config/db.js';
@@ -80,9 +81,9 @@ app.get('/', (req, res) => {
 const seedDatabase = async () => {
   try {
     // 1. Seed Admin
-    const adminCount = await Admin.countDocuments({});
-    if (adminCount === 0) {
-      const admin = new Admin({
+    let admin = await Admin.findOne({ email: 'admin@vidyarthi.com' });
+    if (!admin) {
+      admin = new Admin({
         name: 'Vidyarthi Admin',
         email: 'admin@vidyarthi.com',
         password: 'admin123'
@@ -91,6 +92,13 @@ const seedDatabase = async () => {
       console.log('Database Seeded: Created Default Admin Account:');
       console.log('  Email: admin@vidyarthi.com');
       console.log('  Password: admin123');
+    } else {
+      const isAlreadyMatch = await admin.matchPassword('admin123');
+      if (!isAlreadyMatch) {
+        admin.password = 'admin123';
+        await admin.save();
+        console.log('Database Seeded: Updated Default Admin Account password to admin123');
+      }
     }
 
     // 2. Seed Fee Structure
@@ -180,6 +188,32 @@ const seedDatabase = async () => {
         address: '45-B, Vigyan Nagar, Kota'
       });
       await mockStudent2.save();
+    }
+
+    // 5. Migrate existing Students to have password = phone
+    const allStudents = await Student.find({});
+    for (let s of allStudents) {
+      if (s.phone) {
+        const isPhonePassword = await bcrypt.compare(s.phone, s.password);
+        if (!isPhonePassword) {
+          s.password = s.phone;
+          await s.save();
+          console.log(`Migrated password for student ${s.name} to mobile: ${s.phone}`);
+        }
+      }
+    }
+
+    // 6. Migrate existing Teachers to have password = phone
+    const allTeachers = await Teacher.find({});
+    for (let t of allTeachers) {
+      if (t.phone) {
+        const isPhonePassword = await bcrypt.compare(t.phone, t.password);
+        if (!isPhonePassword) {
+          t.password = t.phone;
+          await t.save();
+          console.log(`Migrated password for teacher ${t.name} to mobile: ${t.phone}`);
+        }
+      }
     }
   } catch (error) {
     console.error('Seeding database failed:', error);

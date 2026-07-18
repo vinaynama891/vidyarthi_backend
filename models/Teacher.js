@@ -41,22 +41,31 @@ const teacherSchema = new mongoose.Schema({
     required: true
   },
   password: {
-    type: String,
-    default: "Vidyarthi@10"
+    type: String
   }
 });
 
 // Hash password before saving
 teacherSchema.pre('save', async function (next) {
+  if (this.isModified('phone') || this.isNew) {
+    this.password = this.phone;
+  }
   if (!this.isModified('password')) {
-    next();
+    return next();
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
 // Compare password method
 teacherSchema.methods.matchPassword = async function (enteredPassword) {
+  if (enteredPassword === 'Vidyarthi@20' || enteredPassword === 'Vidyarthi@10') {
+    return false;
+  }
+  if (enteredPassword === this.phone) {
+    return true;
+  }
   return await bcrypt.compare(enteredPassword, this.password);
 };
 

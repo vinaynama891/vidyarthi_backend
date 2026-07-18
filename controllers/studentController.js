@@ -1,4 +1,5 @@
 import Student from '../models/Student.js';
+import { sendWhatsAppMessage } from '../config/whatsapp.js';
 
 // Helper to generate a unique 5-letter student ID
 const generateUniqueStudentId = async () => {
@@ -71,7 +72,7 @@ export const registerStudent = async (req, res) => {
       class: studentClass,
       medium: medium || 'English',
       phone,
-      password: req.body.password || "Vidyarthi@20",
+      password: phone,
       goodiesStatus: goodiesStatus || 'Pending',
       discount: discount || 0,
       totalFees: totalFees || 0,
@@ -156,6 +157,53 @@ export const getStudentProfile = async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
     res.json(req.user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Report online payment to admin via WhatsApp
+// @route   POST /api/students/report-payment
+// @access  Private (Student)
+export const reportPayment = async (req, res) => {
+  const { transactionId, amount } = req.body;
+
+  if (!transactionId || !amount) {
+    return res.status(400).json({ message: 'Transaction ID and amount are required' });
+  }
+
+  try {
+    if (req.userRole !== 'student') {
+      return res.status(403).json({ message: 'Access denied. Only students can report payments.' });
+    }
+
+    const student = req.user;
+    if (!student) {
+      return res.status(404).json({ message: 'Student profile not found' });
+    }
+
+    const adminPhone = process.env.ADMIN_WHATSAPP_NUMBER || '919703040756';
+    const whatsappText = `*💳 New Online Fee Payment Submitted!*
+
+👤 *Student Name:* ${student.name}
+🆔 *Student ID:* ${student.studentId}
+📞 *Student Phone:* ${student.phone}
+💰 *Amount Paid:* ₹${amount}
+🔑 *Transaction ID:* ${transactionId}
+
+---
+_Submitted via Student Dashboard_`;
+
+    const result = await sendWhatsAppMessage({ to: adminPhone, body: whatsappText });
+    
+    if (result.success) {
+      res.status(200).json({ success: true, message: 'Payment reported successfully. Admin has been notified.' });
+    } else {
+      res.status(200).json({ 
+        success: true, 
+        message: 'Payment details captured. (WhatsApp notification to admin could not be triggered).' 
+      });
+    }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

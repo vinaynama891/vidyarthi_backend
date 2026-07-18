@@ -111,7 +111,7 @@ export const registerTeacher = async (req, res) => {
       email,
       salary,
       joiningDate: joiningDate || new Date(),
-      password: "Vidyarthi@10"
+      password: phone
     });
 
     const createdTeacher = await teacher.save();

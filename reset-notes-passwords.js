@@ -15,10 +15,12 @@ const resetPasswords = async () => {
     console.log(`Found ${notesStudents.length} NotesOnly students.`);
 
     for (const student of notesStudents) {
-      student.password = 'Vidyarthi@20';
-      // Calling .save() executes the pre('save') middleware to correctly bcrypt hash it
-      await student.save();
-      console.log(`Updated password to 'Vidyarthi@20' for: ${student.name} (ID: ${student.studentId})`);
+      if (student.phone) {
+        student.password = student.phone;
+        // Calling .save() executes the pre('save') middleware to correctly bcrypt hash it
+        await student.save();
+        console.log(`Updated password to mobile number '${student.phone}' for: ${student.name} (ID: ${student.studentId})`);
+      }
     }
   } catch (err) {
     console.error('Error during password update:', err);

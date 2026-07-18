@@ -26,8 +26,8 @@ const testDb = async () => {
         console.log(`Password Hash: ${student.password}`);
         
         // Test standard password
-        const isMatch = await student.matchPassword('Vidyarthi@20');
-        console.log(`Password 'Vidyarthi@20' matches? ${isMatch ? 'YES' : 'NO'}`);
+        const isMatch = await student.matchPassword(student.phone);
+        console.log(`Password (Phone) '${student.phone}' matches? ${isMatch ? 'YES' : 'NO'}`);
       }
     }
   } catch (err) {
