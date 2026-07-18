@@ -93,6 +93,12 @@ const studentSchema = new mongoose.Schema({
       ref: 'StudyMaterial'
     }
   ],
+  tempOtp: {
+    type: String
+  },
+  tempOtpExpires: {
+    type: Date
+  },
   createdAt: {
     type: Date,
     default: Date.now

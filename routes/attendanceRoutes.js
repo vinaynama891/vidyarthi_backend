@@ -4,7 +4,8 @@ import {
   markAttendance,
   getAttendance,
   getStudentAttendanceHistory,
-  getTeacherAttendanceHistory
+  getTeacherAttendanceHistory,
+  getMemberAttendanceHistory
 } from '../controllers/attendanceController.js';
 
 const router = express.Router();
@@ -16,5 +17,6 @@ router.post('/mark', markAttendance);
 router.get('/', getAttendance);
 router.get('/student-history', getStudentAttendanceHistory);
 router.get('/teacher-history', getTeacherAttendanceHistory);
+router.get('/history/:userType/:id', getMemberAttendanceHistory);
 
 export default router;

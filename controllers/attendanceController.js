@@ -120,3 +120,31 @@ export const getTeacherAttendanceHistory = async (req, res) => {
     res.status(500).json({ message: `Failed to fetch attendance history: ${error.message}` });
   }
 };
+
+/**
+ * Fetch attendance logs of a specific student or teacher (for Admin view)
+ * Route: GET /api/attendance/history/:userType/:id
+ * Access: Admin
+ */
+export const getMemberAttendanceHistory = async (req, res) => {
+  try {
+    if (req.userRole !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden. Admin role required.' });
+    }
+
+    const { userType, id } = req.params;
+
+    let query = { userType };
+    if (userType === 'student') {
+      query.studentId = id;
+    } else {
+      query.teacherId = id;
+    }
+
+    const history = await Attendance.find(query).select('date status -_id');
+    res.status(200).json(history);
+  } catch (error) {
+    console.error('Error fetching member attendance history:', error);
+    res.status(500).json({ message: `Failed to fetch history: ${error.message}` });
+  }
+};
