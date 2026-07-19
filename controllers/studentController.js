@@ -20,8 +20,14 @@ const generateUniqueStudentId = async () => {
 // @access  Private
 export const getStudents = async (req, res) => {
   try {
-    const { search, classFilter } = req.query;
+    const { search, classFilter, status } = req.query;
     let query = {};
+
+    if (status) {
+      query.status = status;
+    } else {
+      query.status = { $ne: 'Alumni' };
+    }
 
     if (classFilter) {
       query.class = classFilter;
@@ -113,6 +119,7 @@ export const updateStudent = async (req, res) => {
       student.goodiesPaidFee = req.body.goodiesPaidFee !== undefined ? req.body.goodiesPaidFee : student.goodiesPaidFee;
       student.address = req.body.address || student.address;
       student.studentType = req.body.studentType || student.studentType;
+      student.status = req.body.status || student.status;
       if (req.body.unlockedNotes !== undefined) {
         student.unlockedNotes = req.body.unlockedNotes;
       }

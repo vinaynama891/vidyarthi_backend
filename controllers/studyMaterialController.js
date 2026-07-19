@@ -11,19 +11,12 @@ export const getStudyMaterials = async (req, res) => {
     if (req.userRole === 'student') {
       const student = req.user;
       const unlockedNotesSet = new Set((student.unlockedNotes || []).map(id => id.toString()));
-      const isCoachingStudent = student.studentType === 'Regular';
+
+      const isCoachingStudent = student.studentType !== 'NotesOnly';
 
       const secureMaterials = studyMaterials.map(mat => {
         const matObj = mat.toObject();
-        const isFree = mat.notesType === 'Free';
-        const isExplicitlyUnlocked = unlockedNotesSet.has(mat._id.toString());
-
-        if (isFree || isCoachingStudent || isExplicitlyUnlocked) {
-          matObj.isUnlocked = true;
-        } else {
-          matObj.isUnlocked = false;
-          matObj.fileUrl = ''; // Hide download URL for locked items
-        }
+        matObj.isUnlocked = true;
         return matObj;
       });
       return res.json(secureMaterials);
@@ -111,7 +104,8 @@ export const getPublicStudyMaterials = async (req, res) => {
     const safeMaterials = materials.map(mat => {
       const matObj = mat.toObject();
       
-      if (mat.notesType === 'Free') {
+      const isFree = mat.notesType && mat.notesType.trim().toLowerCase() === 'free';
+      if (isFree) {
         matObj.isFree = true;
       } else {
         matObj.isFree = false;
@@ -147,17 +141,7 @@ export const getStudentStudyMaterials = async (req, res) => {
     
     const secureMaterials = materials.map(mat => {
       const matObj = mat.toObject();
-      
-      const isFree = mat.notesType === 'Free';
-      const isCoachingStudent = student.studentType === 'Regular';
-      const isExplicitlyUnlocked = unlockedNotesSet.has(mat._id.toString());
-      
-      if (isFree || isCoachingStudent || isExplicitlyUnlocked) {
-        matObj.isUnlocked = true;
-      } else {
-        matObj.isUnlocked = false;
-        matObj.fileUrl = ''; // Hide download URL for locked/paid items
-      }
+      matObj.isUnlocked = true;
       return matObj;
     });
     

@@ -98,6 +98,11 @@ const studentSchema = new mongoose.Schema({
   tempOtpExpires: {
     type: Date
   },
+  status: {
+    type: String,
+    enum: ['Active', 'Alumni'],
+    default: 'Active'
+  },
   createdAt: {
     type: Date,
     default: Date.now

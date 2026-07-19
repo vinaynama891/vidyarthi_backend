@@ -60,6 +60,9 @@ export const loginUser = async (req, res) => {
       ]
     });
     if (student && (await student.matchPassword(password))) {
+      if (student.status === 'Alumni') {
+        return res.status(403).json({ message: 'Access Denied: Your account has been moved to Alumni status. Access is disabled.' });
+      }
       return res.json({
         _id: student._id,
         name: student.name,
