@@ -11,7 +11,9 @@ export const markAttendance = async (req, res) => {
       return res.status(403).json({ message: 'Forbidden. Admin or Teacher role required.' });
     }
 
-    const { date, userType, records } = req.body;
+    let { date, userType, records } = req.body;
+    if (userType === 'students') userType = 'student';
+    if (userType === 'teachers') userType = 'teacher';
 
     if (req.userRole === 'teacher' && userType !== 'student') {
       return res.status(403).json({ message: 'Forbidden. Teachers can only mark student attendance.' });
@@ -59,7 +61,9 @@ export const getAttendance = async (req, res) => {
       return res.status(403).json({ message: 'Forbidden. Admin or Teacher role required.' });
     }
 
-    const { date, userType } = req.query;
+    let { date, userType } = req.query;
+    if (userType === 'students') userType = 'student';
+    if (userType === 'teachers') userType = 'teacher';
 
     if (req.userRole === 'teacher' && userType !== 'student') {
       return res.status(403).json({ message: 'Forbidden. Teachers can only fetch student attendance.' });

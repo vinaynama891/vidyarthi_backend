@@ -88,7 +88,8 @@ export const registerStudent = async (req, res) => {
       address,
       studentType: studentType || 'Regular',
       unlockedNotes: unlockedNotes || [],
-      installments: req.body.installments || []
+      installments: req.body.installments || [],
+      joiningDate: req.body.joiningDate ? new Date(req.body.joiningDate) : new Date()
     });
 
     const createdStudent = await student.save();
@@ -120,6 +121,9 @@ export const updateStudent = async (req, res) => {
       student.address = req.body.address || student.address;
       student.studentType = req.body.studentType || student.studentType;
       student.status = req.body.status || student.status;
+      if (req.body.joiningDate) {
+        student.joiningDate = new Date(req.body.joiningDate);
+      }
       if (req.body.unlockedNotes !== undefined) {
         student.unlockedNotes = req.body.unlockedNotes;
       }

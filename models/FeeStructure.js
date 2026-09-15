@@ -18,6 +18,14 @@ const feeStructureSchema = new mongoose.Schema({
   hindiMediumFee: {
     type: Number,
     default: 0
+  },
+  englishMediumMonthlyFee: {
+    type: Number,
+    default: 0
+  },
+  hindiMediumMonthlyFee: {
+    type: Number,
+    default: 0
   }
 });
 

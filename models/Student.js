@@ -103,6 +103,10 @@ const studentSchema = new mongoose.Schema({
     enum: ['Active', 'Alumni'],
     default: 'Active'
   },
+  joiningDate: {
+    type: Date,
+    default: Date.now
+  },
   createdAt: {
     type: Date,
     default: Date.now

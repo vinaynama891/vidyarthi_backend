@@ -62,6 +62,8 @@ export const getFeeStructures = async (req, res) => {
           fee: engFee,                    // legacy compat
           englishMediumFee: engFee,
           hindiMediumFee: hindiFee,
+          englishMediumMonthlyFee: structure.englishMediumMonthlyFee || 0,
+          hindiMediumMonthlyFee: structure.hindiMediumMonthlyFee || 0,
           students: studentCount,
           paid: fullyPaidCount,
           pending: pendingCount
@@ -89,7 +91,9 @@ export const getFeeStructureByClass = async (req, res) => {
         class: className,
         fee: 0,
         englishMediumFee: 0,
-        hindiMediumFee: 0
+        hindiMediumFee: 0,
+        englishMediumMonthlyFee: 0,
+        hindiMediumMonthlyFee: 0
       });
     }
 
@@ -100,7 +104,9 @@ export const getFeeStructureByClass = async (req, res) => {
       class: structure.class,
       fee: engFee,
       englishMediumFee: engFee,
-      hindiMediumFee: hindiFee
+      hindiMediumFee: hindiFee,
+      englishMediumMonthlyFee: structure.englishMediumMonthlyFee || 0,
+      hindiMediumMonthlyFee: structure.hindiMediumMonthlyFee || 0
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -111,12 +117,14 @@ export const getFeeStructureByClass = async (req, res) => {
 // @route   PUT /api/fees/structure/:class
 // @access  Private
 export const updateFeeStructure = async (req, res) => {
-  const { fee, englishMediumFee, hindiMediumFee } = req.body;
+  const { fee, englishMediumFee, hindiMediumFee, englishMediumMonthlyFee, hindiMediumMonthlyFee } = req.body;
   const className = req.params.class;
 
   // Determine english fee: prefer explicit englishMediumFee, else legacy fee field
   const engFee = englishMediumFee !== undefined ? parseFloat(englishMediumFee) : (fee !== undefined ? parseFloat(fee) : undefined);
   const hindiFee = hindiMediumFee !== undefined ? parseFloat(hindiMediumFee) : undefined;
+  const engMonthlyFee = englishMediumMonthlyFee !== undefined ? parseFloat(englishMediumMonthlyFee) : undefined;
+  const hindiMonthlyFee = hindiMediumMonthlyFee !== undefined ? parseFloat(hindiMediumMonthlyFee) : undefined;
 
   try {
     let structure = await FeeStructure.findOne({ class: className });
@@ -129,6 +137,12 @@ export const updateFeeStructure = async (req, res) => {
       if (hindiFee !== undefined) {
         structure.hindiMediumFee = hindiFee;
       }
+      if (engMonthlyFee !== undefined) {
+        structure.englishMediumMonthlyFee = engMonthlyFee;
+      }
+      if (hindiMonthlyFee !== undefined) {
+        structure.hindiMediumMonthlyFee = hindiMonthlyFee;
+      }
       const updatedStructure = await structure.save();
       res.json(updatedStructure);
     } else {
@@ -137,7 +151,9 @@ export const updateFeeStructure = async (req, res) => {
         class: className,
         fee: engFee || 0,
         englishMediumFee: engFee || 0,
-        hindiMediumFee: hindiFee || 0
+        hindiMediumFee: hindiFee || 0,
+        englishMediumMonthlyFee: engMonthlyFee || 0,
+        hindiMediumMonthlyFee: hindiMonthlyFee || 0
       });
       const createdStructure = await structure.save();
       res.status(201).json(createdStructure);
